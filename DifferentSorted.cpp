@@ -4,6 +4,7 @@
 #include <fstream>
 using namespace std;
 
+int global_lead_time = 0;
 
 void generateSimpleArray(int* array, int size) {
     srand(time(NULL));
@@ -14,9 +15,11 @@ void generateSimpleArray(int* array, int size) {
 
 void ofstreamArray(ofstream &out, int* array, int size) {
     if (out.is_open()) {
-        for (int iterator = 0; iterator < size; iterator++)
+        out << global_lead_time << endl;
+        for (int iterator = 0; iterator < size; iterator++) {
+            cout << array[iterator] << " ";
             out << array[iterator] << " ";
-        out << array[size - 1];
+        }
     }
 }
 
@@ -60,6 +63,7 @@ void selectionSort(int* array, int size, int begin = 0, bool tipe = true) {
     double time_end = clock();
     if (tipe)
         cout << "Время выполнения сортировки " << time_end - time_begin << " мс\n";
+    global_lead_time = time_end - time_begin;
 }
 
 void reverse(int* array, int size) {
@@ -86,6 +90,7 @@ void bubbleSort(int* array, int size) {
     }
     double time_end = clock();
     cout << "Время выполнения сортировки " << time_end - time_begin << " мс\n";
+    global_lead_time = time_end - time_begin;
 }
 
 void instertionSort(int* array, int size) {
@@ -103,6 +108,7 @@ void instertionSort(int* array, int size) {
     }
     double time_end = clock();
     cout << "Время выполнения сортировки " << time_end - time_begin << " мс\n";
+    global_lead_time = time_end - time_begin;
 }
 
 void merge(int merged[], int lenD, int L[], int lenL, int R[], int lenR) {
@@ -231,6 +237,7 @@ void generateArray(int* array, int size, int generate_type)
     ofstreamArray(out_parent, array, size);
 }
 
+
 class options {
 public:
     char** key;
@@ -262,7 +269,7 @@ public:
 
     bool isKey(const char* new_key) const {
         for (int i = 0; i < mass_size; i++) {
-            if (strcmp(new_key,key[i]))
+            if (strcmp(new_key,key[i])==0)
                 return true;
         }
         return false;
@@ -270,7 +277,7 @@ public:
 
     int whatTheNumberKey(const char* new_key) {
         for (int i = 0; i < mass_size; i++)
-            if (strcmp(new_key, key[i])) {
+            if (strcmp(new_key, key[i])==0) {
                 return i;
             }
         return -1;    
@@ -293,9 +300,17 @@ int main(int argc, char* argv[])
     int size = 100;//по умолчанию-размер массива 100
     int generate_type = 1;//по умолчанию- рандомный массив
     int sort_type = 1;//по умолчанию-сортировка выбором
-    int* array = new int[size];
+    int* array=new int[INT16_MAX];
+    
 
     options o(argc, argv);
+    if (o.isKey("--generate-array-size")) {
+        if (!o.isKey("--input")) {
+            cout<<"size"<< o.option[o.whatTheNumberKey("--generate-array-size")]<<" "<< (int)o.option[o.whatTheNumberKey("--generate-array-size")];//? char**->int
+        //size = (int)o.option[o.whatTheNumberKey("--generate-array-size")];
+    }
+    }
+    
     if (o.isKey("--help")) {
         
         cout << "ОСНОВНЫЕ КОМАНДЫ:\n"<<
@@ -311,40 +326,46 @@ int main(int argc, char* argv[])
             "1-сортировка выбором\n\t\t\t\t2-сортировка пузырьком\n\t\t\t\t"
             "3-сортировка вставками\n\t\t\t\t4-сортировка слиянием\n\t\t\t\t5-быстрая сортировка\n";
     }
+    
+    
      if (o.isKey("--input")) {
-
         size = 0;
+        int* buf = new int[INT16_MAX];
         int num = o.whatTheNumberKey("--imput");
         ifstream in(o.option[num]);
         if (in.is_open()) {
-            while (in >> array[size]) {
+            while (in >> buf[size]) {
                 size++;
             }
         }
-
+        for (int i = 0; i < size; i++)
+            array[i] = buf[i];
+        delete[] buf;
     }
-    
+     
     if (o.isKey("--generate-array-type")) {
         if (!o.isKey("--input"))
-            generate_type = generateArrayType();
+            //??нужно перевести из char** в int. Пробовала через (int), (int*), (int**) и даже (int)&. Всегда вариант не тот, что нужен.
+            cout << "generate type " << o.option[o.whatTheNumberKey("--generate-array-type")] <<" "<<(int) o.option[o.whatTheNumberKey("--generate-array-type")] << endl;
+            //generate_type =(int) o.option[o.whatTheNumberKey("--generate-array-type")];
         else
             cout << "Нельзя сгенерировать тип экспортированного массива\n";
     }
-    if (o.isKey("--generate-array-size")) {
-        if (!o.isKey("--input"))
-            size = generateArraySize();
-        else
-            cout << "Нельзя сгенерировать размер экспортированного массива\n";
-    }
+    
     if (o.isKey("--generate-array")) {
-        if (!o.isKey("--generate-array-size") && !o.isKey("--input"))
+        if (!o.isKey("--generate-array-size") && !o.isKey("--input")) {
             size = generateArraySize();
+        }
         if(!o.isKey("--generate-array-type"))
             generate_type= generateArrayType();
         generateArray(array,size,generate_type);
+        if (!o.isKey("--sort-type"))
+            sort_type = sortType();
     }
     if (o.isKey("--sort-type")) {
-        sort_type = sortType();
+        //??аналогично generate type
+        cout << "sort type " << o.option[o.whatTheNumberKey("--sort-type")] << " " << (int)o.option[o.whatTheNumberKey("--sort-type")];
+        //sort_type = (int)o.option[o.whatTheNumberKey("--sort-type")];
     }
     cout << endl;
     
@@ -379,6 +400,7 @@ int main(int argc, char* argv[])
                 mergeSort(array, size);
                 double time_end = clock();
                 cout << "Время выполнения сортировки " << time_end - time_begin << " мс\n";
+                global_lead_time = time_end - time_begin;
                 break;
             }
             case 5: {
@@ -386,6 +408,7 @@ int main(int argc, char* argv[])
                 quickSort(array, size);
                 double time_end = clock();
                 cout << "Время выполнения сортировки " << time_end - time_begin << " мс\n";
+                global_lead_time = time_end - time_begin;
                 break;
             }
             default: {

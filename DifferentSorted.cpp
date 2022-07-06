@@ -9,18 +9,43 @@ int global_lead_time = 0;
 void generateSimpleArray(int* array, int size) {
     srand(time(NULL));
     for (int iterator = 0; iterator < size; iterator++) {
-        array[iterator] = rand() % 100 + 1;
+        array[iterator] = rand() % 1000000 + 1;
     }
 }
 
-void ofstreamArray(ofstream &out, int* array, int size) {
+void ofstreamArrayTXT(ofstream &out, int* array, int size) {
+    out << global_lead_time<<'\t'<<size<<"\n";
     if (out.is_open()) {
-        out << global_lead_time << endl;
         for (int iterator = 0; iterator < size; iterator++) {
-            cout << array[iterator] << " ";
             out << array[iterator] << " ";
         }
     }
+}
+
+void ofstreamArrayJSON(ofstream& out, int* array, int size) {
+    out << "{\n" << "\"sort-size\": " << size << ",\n";
+    out<< "{\n" << "\"sort-time\": " << global_lead_time << ",\n";
+    out << "{\n" << "\"sorted-array\": [ ";
+    for (int i = 0; i < size-1; i++) {
+        out << array[i] << ", ";
+    }
+    out << array[size - 1] << "]\n}";
+}
+
+bool isJSON(char* word) {
+    if (strlen(word) > 5) {
+        char* drow = new char[strlen(word)];
+        for (int i = 0; i < strlen(word); i++)
+            drow[i] = word[strlen(word) - i-1];
+        char* cutdrow=new char[5];
+        for (int i = 0; i < 5; i++)
+            cutdrow[i] = drow[i];
+        if (strcmp(cutdrow, "nosj.") == 0) {
+            return true;
+        }
+    }
+    else
+        return false;
 }
 
 //void lookArray(int* array, int size) {
@@ -234,7 +259,7 @@ void generateArray(int* array, int size, int generate_type)
     }
     //cout << " Ваш исходный массив:\n";
             //lookArray(array, size);
-    ofstreamArray(out_parent, array, size);
+    ofstreamArrayTXT(out_parent, array, size);
 }
 
 
@@ -248,14 +273,15 @@ public:
         this->argc = argc;
         key = new char* [20];
         option = new char* [50];
+        static char str = '/0';
 
         mass_size = 0;
         cout << endl;
-        for (int i = 1; i < argc - 1; i++) {
+        for (int i = 1; i < argc; i++) {
             if (argv[i][0] == '-' && argv[i][1] == '-') {
-                if (strcmp(argv[i],"--help")==0) {
+                if (strcmp(argv[i],"--help")==0||strcmp(argv[i],"--generate-array")==0) {
                     key[mass_size] = argv[i];
-                    option[mass_size] = argv[i];//не могу сделать нулевую строку. Ели пишу '/0'- проблема преобразованияx char* в const char, "/0"-чаровским указателям нельзя присваивать строковые литералы ,NULL-проблема чтения
+                    option[mass_size] =&str;
                 }
                 else {
                     key[mass_size] = argv[i];
@@ -306,8 +332,8 @@ int main(int argc, char* argv[])
     options o(argc, argv);
     if (o.isKey("--generate-array-size")) {
         if (!o.isKey("--input")) {
-            cout<<"size"<< o.option[o.whatTheNumberKey("--generate-array-size")]<<" "<< (int)o.option[o.whatTheNumberKey("--generate-array-size")];//? char**->int
-        //size = (int)o.option[o.whatTheNumberKey("--generate-array-size")];
+            //cout<<"size "<< o.option[o.whatTheNumberKey("--generate-array-size")]<<" "<< (int)o.option[o.whatTheNumberKey("--generate-array-size")]<<endl;//? char**->int
+        size = atoi(o.option[o.whatTheNumberKey("--generate-array-size")]);
     }
     }
     
@@ -325,6 +351,7 @@ int main(int argc, char* argv[])
             "--sort-type <число>\tвыбор типа сортировки массива:\n\t\t\t\t"<<
             "1-сортировка выбором\n\t\t\t\t2-сортировка пузырьком\n\t\t\t\t"
             "3-сортировка вставками\n\t\t\t\t4-сортировка слиянием\n\t\t\t\t5-быстрая сортировка\n";
+        return 0;
     }
     
     
@@ -346,8 +373,8 @@ int main(int argc, char* argv[])
     if (o.isKey("--generate-array-type")) {
         if (!o.isKey("--input"))
             //??нужно перевести из char** в int. Пробовала через (int), (int*), (int**) и даже (int)&. Всегда вариант не тот, что нужен.
-            cout << "generate type " << o.option[o.whatTheNumberKey("--generate-array-type")] <<" "<<(int) o.option[o.whatTheNumberKey("--generate-array-type")] << endl;
-            //generate_type =(int) o.option[o.whatTheNumberKey("--generate-array-type")];
+            //cout << "generate type " << o.option[o.whatTheNumberKey("--generate-array-type")] <<" "<<atoi( o.option[o.whatTheNumberKey("--generate-array-type")]) << endl;
+            generate_type =atoi( o.option[o.whatTheNumberKey("--generate-array-type")]);
         else
             cout << "Нельзя сгенерировать тип экспортированного массива\n";
     }
@@ -364,8 +391,8 @@ int main(int argc, char* argv[])
     }
     if (o.isKey("--sort-type")) {
         //??аналогично generate type
-        cout << "sort type " << o.option[o.whatTheNumberKey("--sort-type")] << " " << (int)o.option[o.whatTheNumberKey("--sort-type")];
-        //sort_type = (int)o.option[o.whatTheNumberKey("--sort-type")];
+        //cout << "sort type " << o.option[o.whatTheNumberKey("--sort-type")] << " " << (int)o.option[o.whatTheNumberKey("--sort-type")];
+        sort_type = atoi(o.option[o.whatTheNumberKey("--sort-type")]);
     }
     cout << endl;
     
@@ -419,14 +446,14 @@ int main(int argc, char* argv[])
      
         if (o.isKey("--output")) {
             ofstream sorted(o.option[o.whatTheNumberKey("--output")]);
-            ofstreamArray(sorted, array, size);
+            ofstreamArrayTXT(sorted, array, size);
             if (sorted.good())
                 cout << "Запись прошла успешно\n";
         }
         else {
             cout << "Сохранение по умолчанию: SortedArray.txt";
             ofstream out_child("SortedArray.txt");
-            ofstreamArray(out_child, array, size);
+            ofstreamArrayTXT(out_child, array, size);
             if (out_child.good())
                 cout << "Запись по умолчанию прошла успешно\n";
         }

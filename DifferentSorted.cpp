@@ -491,7 +491,7 @@ int main(int argc, char* argv[])
 
             if (o.isKey("--json") || isExtension(o.option[o.whatTheNumberKey("--output")], ".json")) {
                 ofstreamArrayJSON(sorted, array, size);
-                sorted << "\n\"self-test: " << test << "\n}";
+                sorted << "\n\"self-test:\" " << test << "\n}";
             }
             else {
                 ofstreamArrayTXT(sorted, array, size);

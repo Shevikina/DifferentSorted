@@ -2,6 +2,7 @@
 #include <ctime>
 #include <cstdlib>
 #include <fstream>
+#include <algorithm>
 using namespace std;
 
 double global_lead_time = 0;
@@ -19,7 +20,7 @@ public:
         static char str = '\0';
 
         mass_size = 0;
-        cout << endl;
+        //cout << endl;
         for (int i = 1; i < argc; i++) {
             if (argv[i][0] == '-' && argv[i][1] == '-') {
                 if (strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "--generate-array") == 0) {
@@ -30,7 +31,7 @@ public:
                     key[mass_size] = argv[i];
                     option[mass_size] = argv[i + 1];
                 }
-                cout << key[mass_size] << " " << option[mass_size] << endl;
+                //cout << key[mass_size] << " " << option[mass_size] << endl;
                 mass_size++;
             }
         }
@@ -62,7 +63,7 @@ protected:
 };
 
 void generateSimpleArray(int* array, int size) {
-    srand(time(0));
+    srand((unsigned int)time(0));
     for (int iterator = 0; iterator < size; iterator++) {
         array[iterator] = rand() % 1000000 + 1;
     }
@@ -89,7 +90,7 @@ void ofstreamArrayJSON(ofstream& out, int* array, int size) {
 
 bool isExtension(char* word,const char* extension) {
     if (strlen(word) > strlen(extension)) {
-        for (int i = strlen(word) - strlen(extension), j = 0; i < strlen(word); i++, j++)
+        for (size_t i = strlen(word) - strlen(extension), j = 0; i < strlen(word); i++, j++)
             if (word[i] != extension[j])
                 return false;
         return true;
@@ -312,7 +313,7 @@ char* selfTest(int* array, int size) {
     static char NOTOK[]= "NOT OK";
     for (int i = 0; i < size-1; i++)
     {
-        if (array[i] < array[i + 1])
+        if (array[i] <= array[i + 1])
             i++;
         else
             return NOTOK;
@@ -323,10 +324,10 @@ char* selfTest(int* array, int size) {
 int main(int argc, char* argv[])
 {
     setlocale(LC_ALL, "Russian");
-    cout <<"argc:" << argc << endl << "argv:";
+    /*cout <<"argc:" << argc << endl << "argv:";
     for (int i = 0; i < argc; i++) {
         cout << argv[i] << " ";
-    }
+    }*/
 
     options o(argc, argv);
 
@@ -397,6 +398,7 @@ int main(int argc, char* argv[])
      }
 
      if (o.isKey("--generate-array")) {
+         cout << "Генерация массива начата...\n";
          if (!o.isKey("--generate-array-type")) {
              generate_type = generateArrayType();
              if (generate_type < 1 || generate_type>4) {
@@ -408,6 +410,7 @@ int main(int argc, char* argv[])
          generateArray(array, size, generate_type);
          if (!o.isKey("--sort-type"))
              sort_type = sortType();
+         cout << "Генерация завершена.\n";
      }
 
     if (o.isKey("--generate-array-type")) {
@@ -424,7 +427,7 @@ int main(int argc, char* argv[])
     if (o.isKey("--sort-type")) {
         sort_type = atoi(o.option[o.whatTheNumberKey("--sort-type")]);
     }
-    cout << endl;
+    //cout << endl;
     
     if (!o.isKey("--input") && !o.isKey("--generate-array")) {
         cout << "Генерация массива по умолчанию:\n";
@@ -439,49 +442,53 @@ int main(int argc, char* argv[])
         sort_type = 1;//по умолчанию-сортировка выбором 1
         selectionSort(array, size, 0, true);
     }
-    else
+    else {
+        cout << "Сортировка начата...\n";
         switch (sort_type) {
-            case 1: {
-                selectionSort(array, size, 0, true);                
-                break;
-            }
-            case 2: {
-                bubbleSort(array, size);
-                break;
-            }
-            case 3: {
-                instertionSort(array, size);
-                break;
-            }
-            case 4: {
-                double time_begin = clock();
-                mergeSort(array, size);
-                double time_end = clock();
-                cout << "Время выполнения сортировки " << time_end - time_begin << " мс\n";
-                global_lead_time = time_end - time_begin;
-                break;
-            }
-            case 5: {
-                double time_begin = clock();
-                quickSort(array, size);
-                double time_end = clock();
-                cout << "Время выполнения сортировки " << time_end - time_begin << " мс\n";
-                global_lead_time = time_end - time_begin;
-                break;
-            }
-            case 6: {
-                double time_begin = clock();
-                std::qsort(&array, size, sizeof(int), comparator);
-                double time_end = clock();
-                cout << "Время выполнения сортировки " << time_end - time_begin << " мс\n";
-                global_lead_time = time_end - time_begin;
-                break;
-            }
-            default: {
-                cout << "Ошибка. Нет такого номера для выбора сортировки массива.\n";
-                return -1;
-            }
-            }
+        case 1: {
+            selectionSort(array, size, 0, true);
+            break;
+        }
+        case 2: {
+            bubbleSort(array, size);
+            break;
+        }
+        case 3: {
+            instertionSort(array, size);
+            break;
+        }
+        case 4: {
+            double time_begin = clock();
+            mergeSort(array, size);
+            double time_end = clock();
+            cout << "Время выполнения сортировки " << time_end - time_begin << " мс\n";
+            global_lead_time = time_end - time_begin;
+            break;
+        }
+        case 5: {
+            double time_begin = clock();
+            quickSort(array, size);
+            double time_end = clock();
+            cout << "Время выполнения сортировки " << time_end - time_begin << " мс\n";
+            global_lead_time = time_end - time_begin;
+            break;
+        }
+        case 6: {
+            double time_begin = clock();
+            sort(&array[0], &array[size]);
+            //std::qsort(&array[0], size, sizeof(int), comparator);
+            double time_end = clock();
+            cout << "Время выполнения сортировки " << time_end - time_begin << " мс\n";
+            global_lead_time = time_end - time_begin;
+            break;
+        }
+        default: {
+            cout << "Ошибка. Нет такого номера для выбора сортировки массива.\n";
+            return -1;
+        }
+        }
+        cout << "Сортировка закончена.\n";
+    }
     
 
     char* test = selfTest(array, size);
@@ -491,7 +498,7 @@ int main(int argc, char* argv[])
 
             if (o.isKey("--json") || isExtension(o.option[o.whatTheNumberKey("--output")], ".json")) {
                 ofstreamArrayJSON(sorted, array, size);
-                sorted << "\n\"self-test:\" " << test << "\n}";
+                sorted << "\n\"self-test\": \"" << test << "\"\n}";
             }
             else {
                 ofstreamArrayTXT(sorted, array, size);
